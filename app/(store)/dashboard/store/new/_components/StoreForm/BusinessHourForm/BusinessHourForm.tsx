@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Flex } from "@/components/layout";
 import type { BusinessHour } from "@/types/store";
 import { parse, format, isValid, isBefore } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -106,7 +107,7 @@ export const BusinessHourForm: FC<Props> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <Flex direction="column" gap="4">
       {DAYS_OF_WEEK.map(({ value: dayOfWeek, label }) => {
         const businessHour = businessHours.find(
           (hour) => hour.dayOfWeek === dayOfWeek
@@ -114,9 +115,9 @@ export const BusinessHourForm: FC<Props> = ({
         const isOpen = !!businessHour;
 
         return (
-          <div key={dayOfWeek} className="flex items-center gap-4">
-            <div className="w-24">
-              <div className="flex items-center space-x-2">
+          <Flex key={dayOfWeek} align="center" gap="4">
+            <Flex className="w-24">
+              <Flex align="center" gap="2">
                 <Switch
                   checked={isOpen}
                   onCheckedChange={(checked: boolean) =>
@@ -124,10 +125,10 @@ export const BusinessHourForm: FC<Props> = ({
                   }
                 />
                 <span className="text-sm font-medium">{label}</span>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
             {isOpen && businessHour && (
-              <>
+              <Flex align="center" gap="4">
                 <Select
                   value={businessHour.openTime}
                   onValueChange={(value: string) =>
@@ -163,12 +164,12 @@ export const BusinessHourForm: FC<Props> = ({
                     ))}
                   </SelectContent>
                 </Select>
-              </>
+              </Flex>
             )}
-          </div>
+          </Flex>
         );
       })}
       {error && <p className="text-sm text-red-500">{error}</p>}
-    </div>
+    </Flex>
   );
 };
