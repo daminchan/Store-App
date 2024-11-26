@@ -1,0 +1,456 @@
+# コーディング規約 v2.0
+
+## 0. AIコード生成・リファクタリングの基本方針
+### 品質保証のためのチェックリスト
+- [ ] 型安全性の確保
+  - 厳密な型定義とTypeScriptの機能を最大限活用
+  - any型の使用を禁止
+  - unknown型の適切な使用
+    - unknown型を別の型に変換する場合は、型ガードを使用する
+
+- [ ] パフォーマンス最適化
+  - 不要なレンダリングの防止
+  - メモ化の適切な使用
+  - バンドルサイズの最適化
+  - 画像の最適化
+  - Suspenseの活用
+
+- [ ] セキュリティ対策
+  - XSS対策の実装
+  - 適切なバリデーション
+  - 機密情報の適切な取り扱い
+
+### リファクタリング優先順位
+1. セキュリティ関連の修正
+2. パフォーマンスに影響する問題
+3. 型安全性の向上
+4. コードの可読性向上
+5. 保守性の改善
+
+### AIによるコード生成時の注意点
+- 既存のコードベースとの一貫性を保持
+- ベストプラクティスの適用
+- エッジケースの考慮
+- テスト容易性の確保
+- アクセシビリティへの配慮
+
+## 1. スタイリング
+### CSSライブラリ
+  - tailwindcss
+    - 不正なクラス名を使用しないこと
+      - 任意の値を設定する場合は `"w-[250px]"` のように記述する
+      - 動的なスタイルはtwMergeを使用する
+    - レスポンシブデザインの実装
+      - sm:, md:, lg:, xl:のブレークポイントを適切に使用
+
+### スタイルルール
+  - 汎用コンポーネントには設計上不可欠なスタイルのみを適用し、変更可能なものは下層で行う
+  - 要素間の余白は marginではなくgapで指定する
+  - 要素を並べるとき、それぞれが固定幅ならGrid、変動するならFlexを使う
+    - Gridを使うべきケース
+      - 複雑なレイアウト（例: ダッシュボードやグリッドデザイン）
+      - 明確な領域分けが必要な場合（例: ヘッダー、サイドバー、メインコンテンツ、フッターを持つレイアウト）
+      - 等間隔に要素を配置したい場合（例: 画像ギャラリー、商品リスト）
+    - Flexを使うべきケース
+      - 単一方向のアイテム配置（例: ナビゲーションバーやボタンの横並び）
+      - コンテンツサイズに応じたレイアウト調整（例: ボタンの中央揃えや要素の自動調整）
+      - アイテムの順序を動的に変更したい場合（Flexはorderプロパティを使って順序を変更できる）
+      - 中央揃えが必要なケース
+
+## 2. コード品質
+### 命名と型
+  ### 命名規則の統一
+    - 状態や関数、変数の命名は一貫性を持たせる
+    - 状態変数の接頭辞
+      - is: ブール値（例: isActive）
+      - has: 所有フラグ（例: hasPermission）
+      - can: 能力フラグ（例: canEdit）
+      - should: 条件フラグ（例: shouldUpdate）
+      - on: イベントハンドラ（例: onClick, onSubmit）
+    - 関数の命名規則
+      - 動詞から始める（例: fetchData, updateUser）
+      - 副作用を伴う関数にはdoやexecuteなどを使用
+    - 変数の命名規則
+      - 配列の場合は複数形にする
+      - APIレスポンスから取り出した変数は、元のデータとの関連が分かる名前にする
+      - 同じ概念の異なるバリエーションは、その違いが分かる修飾語を付ける
+      - 抽象的な命名を避ける
+        - Bad: data, info, content, item
+      - APIレスポンスのデータは具体的な内容を示す名前をつける
+        - Bad: const data = await fetchUsers()
+        - Good: const users = await fetchUsers()
+
+  - 型はinterfaceではなくtypeを使って統一する
+  - `import React from 'react'`は不要
+  - importのtypeは明示的にする
+    - 例: `import { SomeType } from 'xxx'`
+  - コンポーネントはFCで型をつける
+    - propsを受け取る場合は`FC<Props>`の形で型をつける
+    - FCは明示的にimportする `import { FC } from 'react'`
+  - Propsの型を定義する場合は、そのコンポーネントと同じファイル内に記述する
+    - コンポーネントが1つの場合は`type Props = {}`として定義する
+    - コンポーネントが複数の場合は`type コンポーネント名 + Props = {}`として定義する
+    - 子コンポーネントのpropsを受け取る場合はComponentPropsを使用して子コンポーネントの型を再利用すること
+      - 例: `type ComponentBProps = ComponentProps<typeof ComponentB>`
+  - `map`メソッドの引数や型は実態に合ったものにすることで、読みやすく、タイプセーフなコードを目指す
+    - 例: `const articles.map((article) => {})`
+
+  ### コールバック関数の切り分け基準
+    - map/filter/reduceなどの配列メソッドのコールバック関数は以下の基準を参考に判断する:
+
+    1. インラインで記述する場合
+      - 単純なプロパティの参照や変換
+      - 単純な条件判定
+      例：
+      ```typescript
+      // Good
+      users.map((user) => user.name)
+      items.filter((item) => item.isActive)
+      users.map((user) => ({
+        id: user.id,
+        name: user.name,
+      }))
+      ```
+
+    2. 関数を切り出す場合
+      - 複数の変換や加工処理が必要な場合
+      - 条件分岐やビジネスロジックを含む場合
+      - 同じロジックを複数箇所で使用する場合
+      - 型の明示的な指定が必要な場合
+      例：
+      ```typescript
+      // Good
+      const formatUserData = (user: User) => {
+        const role = getRoleLabel(user.role)
+        const permissions = user.permissions.map(getPermissionLabel)
+
+        return {
+          name: `${user.firstName} ${user.lastName}`,
+          role,
+          permissions,
+          lastLoginAt: formatDate(user.lastLoginAt)
+        }
+      }
+
+      // 使用例
+      users
+        .filter((user) => user.isActive)
+        .map(formatUserData)
+      ```
+
+      注意点：
+      - パフォーマンスへの影響が小さい場合は、可読性を優先する
+      - 過度な関数の切り出しは避ける
+      - 切り出した関数名は処理内容が明確に分かるものにする
+      - mapの中でnullを返すような条件分岐は避け、事前にfilterで対象を絞り込む
+
+### 可読性の向上
+  - Props型の各プロパティに説明コメントを記述する
+  - JSDocを使ってコンポーネント、関数の説明を記述する
+    - @description: コンポーネントの説明 条件分岐がある場合は、その条件分岐の説明を記述する
+    - @param: 引数の説明 プロパティ名 - 説明 の形式で記述する
+    - @example: 使用例 (使用方法が複雑な場合は、コメントを記述する)
+  - 条件分岐が複雑な場合は、if文の前後に説明コメントを記述する
+    - 特に以下のケースではコメントを必須とする：
+      - 否定演算子（!）を使用している場合
+      - 複数の条件を組み合わせている場合
+      - 列挙型やステータスに基づく分岐の場合
+    - コメントの記述例：
+      ```typescript
+      // ユーザーが参加済みまたは顧客が待機中でない場合は処理を終了
+      if (!(status === 'USER_JOINED' || status === 'CUSTOMER_WAITING')) {
+        return
+      }
+      ```
+  - マジックナンバーは定数として定義する
+  - 左辺がnullまたはundefinedのみをデフォルト判定条件にしたい場合は、null合体演算子を使用する
+  - 冗長なカスタムHookを作成しない
+    - シンプルなロジックの場合は、コンポーネントに直接記述する
+
+## 3. アーキテクチャ
+### Next.jsのルーティング
+  - Linkコンポーネントの使用
+    - 静的な遷移にはnext/linkのLinkコンポーネントを使用
+    - import Link from 'next/link'
+    - <Link href="/">...</Link>
+
+  - ダイナミックルーティング
+    - [id]や[slug]などのダイナミックセグメントを使用する場合は、
+      型安全性のために、paramsの型を定義すること
+    例：
+    ```typescript
+    type Props = {
+      params: {
+        id: string
+      }
+    }
+    ```
+  - window.location.hrefの直接操作は避け、useRouterを使用すること
+    - import { useRouter } from 'next/navigation'
+    - const router = useRouter()
+    - router.push("/")を使用
+
+### ディレクトリ構造
+  #### 基本構造
+    - page.tsx: サーバーコンポーネント（prefetch用）
+    - ○○○○Page.tsx: クライアントコンポーネント実装
+    - ○○○○_components/: ページ固有のコンポーネント
+    - ○○○○_hooks/: ページ固有のフック
+    - components/: 汎用コンポーネント
+    - features/: 機能別コンポーネント
+
+  #### リファクタリングガイドライン
+    - ドメイン知識を含むコンポーネントは共通パッケージではなく、各アプリの_componentsディレクトリで管理する
+      - これにより：
+        - ドメインの責務が明確になる
+        - 機能に関連するコンポーネントが適切な場所に配置される
+        - 意図しない再利用を防ぐことができる
+
+### コンポーネントの構成とexportの制限
+  - _componentsフォルダの設計
+    - 必ずコンポーネントの親子関係とディレクトリ構造が同じになるように作成する（子コンポーネントは子ディレクトリに配置する）
+    - コンポーネントを適切な粒度で分割すること
+      - 1ディレクトリにつき1コンポーネントを配置する
+        - コンポーネントのexportのルール
+          - 必ずindex.tsを1階層につき1つ作成し、同階層のコンポーネントをindex.tsでexportすること
+            export { ComponentA } from './ComponentA'
+      - 子コンポーネントは子ディレクトリに分割する
+    - 意図しない階層からのimportが防止
+    - 2階層以上下のコンポーネントを使用しないこと
+  例：
+    ├ _components // その画面でしか使用しないコンポーネント
+    │   ├ ComponentA
+    │   │   ├ ComponentA.tsx // ComponentBとComponentCを使用する
+    │   │   ├ ComponentB
+    │   │   │   ├ ComponentB.tsx
+    │   │   │   ├ index.ts
+    │   │   │   └ index.ts
+    │   │   ├ ComponentC
+    │   │   │   ├ ComponentC.tsx
+    │   │   │   └ index.ts
+    │   └ index.ts
+    ├ _hooks // その画面でしか使用しないフック
+    │   ├ use****.ts
+    │   └ index.ts
+    └ page.tsx // ComponentAを使用する
+
+  - featuresフォルダの設計
+  features
+  ├ common
+  │ ├ XxxxSection.tsx
+  │ └ XxxxSection.stories.tsx
+  └ Form
+    ├ XxxxForm.tsx
+    └ XxxxForm.stories.tsx
+    - 別の画面でも使い回すようなコンポーネントは、components または features ディレクトリに格納する
+      - components: 汎用的・分類が難しいコンポーネントをここに配置
+      - Authorization, Confirmation, Error, Loading, Notification, Pagination, Search, Validation など：分類が可能なコンポーネントはそれぞれディレクトリを命名し配置
+
+## 4. 実装ガイドライン
+### リファクタルール
+  ### 破壊的な操作の禁止
+    - 配列やオブジェクトに対して破壊的（mutative）な操作を行うメソッドや関数を使用しないこと
+    - 例: push, pop, splice, sort, reverse など
+    - 不変性を保つために、非破壊的（immutable）なメソッドや関数を優先する
+    - 例: map, filter, reduce, concat, slice など
+    - 状態管理においても破壊的な変更を避け、常に新しい状態オブジェクトを作成して返すこと
+
+  ### 再代入の制限
+    - 再代入を避けるため、可能な限りconstを使用する（letの使用は最小限に抑える）
+      - 状態や変数が変更される可能性がある場合でも、再代入を避ける工夫を優先する
+
+  ### コードの分割
+    - 関数やコンポーネントが複雑化した場合、責務ごとに小さく分割する
+    - コード分割をしすぎない
+      - 過剰な分割はかえって管理が煩雑になるため、バランスを考慮する
+      - 目安: 1つの関数やファイルが単一責務を超えた場合に分割する
+    - 明確な命名規則を守る
+      - 分割したコードを理解しやすくするため、適切な名前を付ける
+      - 例: UserList の子コンポーネントは UserListItem のように、親子関係がわかる名前にする
+    - 依存関係を明確にする
+      - 分割したモジュール間の依存関係が複雑にならないようにする
+      - コンポーネント間のデータフローを単純に保つ
+
+  ### 条件分岐の簡略化
+    - 条件分岐がネストしすぎないようにする
+    - 早期リターンを活用してネストを減らす
+
+  ### 画像
+    - src/public配下に配置する
+
+### コンポーネント設計
+  #### 基本原則
+    - レンダリング時の負荷を最小限にする
+    - コンポーネント間の状態管理はStateのリフトアップを使用
+    - 適切な粒度でのコンポーネント分割
+
+  #### コンポーネントの責務分担
+    - 親コンポーネント
+      - データの受け取りと下層コンポーネントへの受け渡し
+      - 全体のレイアウト管理
+      - 子コンポーネント間の連携
+    - 子コンポーネント
+      - 受け取ったデータの加工・変換ロジック
+      - UIの詳細な実装
+      - コンポーネント固有のロジック
+
+    ```typescript
+    // Bad
+    const ParentComponent = () => {
+      return (
+        <ChildComponent
+          value={calculateValue(data)} // 親でデータを加工している
+          label={formatLabel(text)}    // 親でフォーマット処理をしている
+        />
+      )
+    }
+
+    // Good
+    const ParentComponent = () => {
+      return (
+        <ChildComponent
+          data={data}     // 生データをそのまま渡す
+          text={text}     // 加工が必要なデータも生のまま渡す
+        />
+      )
+    }
+    ```
+
+  #### 条件分岐とレンダリング
+    - 条件分岐は必要最小限のスコープに限定する
+      ```typescript
+      // Bad - コンポーネント全体を条件分岐でラップ
+      if (!task.assignee) return null
+
+      return (
+        <div>
+          <p>{task.title}</p>
+          <div>
+            <Assignee assignee={task.assignee} /> // assigneeが必要な箇所のみ条件分岐すべき
+            <p>{task.createdAt}</p>
+          </div>
+        </div>
+      )
+
+      // Good - 条件分岐が必要な箇所のみをラップ
+      return (
+        <div>
+          <p>{task.title}</p>
+          <div>
+            {task.assignee && <Assignee assignee={task.assignee} />}
+            <p>{task.createdAt}</p>
+          </div>
+        </div>
+      )
+      ```
+
+    - 理由：
+      - 必要のない箇所まで条件分岐に含めると、表示可能なコンテンツまで非表示になってしまう
+      - コードの可読性が低下する
+      - 条件分岐の意図が不明確になる
+      - パフォーマンスに影響を与える可能性がある
+
+    - 例外：
+      - データの読み込み中の表示制御
+      - エラー時の表示制御
+      - ページ全体で必要なデータが存在しない場合
+
+  #### イベントハンドリング
+  - エラーハンドリングがなく、シンプルなイベントハンドラの場合は、handle○○○○という関数を作成せず、DOMのonChangeやonClickなどの属性で直接ロジックを記述する
+    - シンプルなイベントハンドラとは
+      - 実行関数をラップするだけのもの
+        - 例: const handleClick = () => { someFunction({...}) }
+    - ロジックが複雑な場合は、DOMの外側に定義しても良い
+
+### API関連
+  - featureディレクトリには、fetchの責務は持たせない
+  - データの取得
+    - page.tsx（サーバー）ではcreatePrefetchを使用してprefetchを行う
+    - ○○○○Page.tsx（クライアント）ではcreateUseQueryを使用してデータ取得を行う
+
+
+## 5. テスト・開発ツール
+### Storybookの使用法
+  - APIのMockデータを使い、Storybookのargsに適用。Mock作成の手間を最小限に抑えることで他者とのデータ共有とテストの信頼性が向上
+    - Mockデータは、`src/repositories/mocks` に `Customer.tsx` のようなファイルを作成し、取得関数を定義する
+      - `export const createCustomerMock = (引数) => ({ モックの中身 })`
+  - storyは1ディレクトリにつき1ファイルのみ作成する
+
+## 7. エラー処理
+### エラーハンドリング
+- try-catchの適切な使用
+- エラーの型定義
+- ユーザーフレンドリーなエラーメッセージ
+
+## 8. パフォーマンス最適化
+### レンダリング最適化
+- useMemo、useCallbackの適切な使用
+- 不要なレンダリングの防止
+- 仮想化の活用
+
+### 画面遷移の最適化
+- router.prefetchを使用して画面遷移を最適化する
+  - ユーザーが遷移する可能性が高い関数では事前にprefetchする
+    ```typescript
+    // Bad - フォーム送信後の遷移先ページをprefetchしていない
+    const handleSubmit = async () => {
+      await submitForm(formData)
+      router.push('/complete')
+    }
+
+    // Good - フォーム送信中に遷移先ページをprefetchする
+    const handleSubmit = async () => {
+      router.prefetch('/complete')
+      await submitForm(formData)
+      router.push('/complete')
+    }
+    ```
+
+### データ取得の最適化
+- キャッシュ戦略
+- プリフェッチの活用
+- ページネーションの実装
+- 並列リクエストの活用
+
+## 9. セキュリティ対策
+### XSS対策
+- dangerouslySetInnerHTMLの使用制限
+- 入力値のサニタイズ
+- Content Security Policyの設定
+
+### CSRF対策
+- トークンの適切な管理
+- セッション管理
+- Cookieの適切な設定
+
+## 10. アクセシビリティ
+
+### アクセシブルな説明の追加
+- コンテンツの意味や目的を説明する属性を追加する
+  - リスト形式のコンテンツには`aria-label`で説明を追加
+    ```typescript
+    // Good
+    <div
+      role="list"
+      aria-label="処方内容リスト"
+    >
+    ```
+  - 合計金額などの重要な情報には`aria-label`で補足説明を追加
+    ```typescript
+    // Good
+    <p aria-label="処方箋合計金額">
+      {prescription.amount}円
+    </p>
+    ```
+  - データを表示する領域には`role`属性を適切に設定
+    ```typescript
+    // Good
+    <div
+      role="region"
+      aria-label="処方内容詳細"
+    >
+    ```
+
+### キーボード操作のサポート
+- フォーカス管理
+- ショートカットキーの実装

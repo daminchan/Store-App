@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+// 店舗モデル
+model Store {
+  id            String         @id @default(cuid())
+  name          String
+  description   String
+  businessHours BusinessHour[] // 1対多の関係
+  ownerId       String         // ClerkのユーザーID
+  categories    String[]       // PostgreSQLの配列型を使用
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // リレーション
+  menus        MenuItem[]     // 店舗の持つメニュー
+  reservations Reservation[]  // 店舗の予約一覧
+
+  @@index([ownerId])
+}
+
+// 営業時間モデル
+model BusinessHour {
+  id        String   @id @default(cuid())
+  storeId   String
+  dayOfWeek Int      // 0-6 (日曜-土曜)
+  openTime  String   // "09:00" 形式
+  closeTime String   // "17:00" 形式
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // リレーション
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+}
+
+// メニューモデル
+model MenuItem {
+  id           String   @id @default(cuid())
+  storeId      String
+  name         String
+  price        Int
+  description  String
+  category     String
+  internalTags String[] // PostgreSQLの配列型を使用
+  isAvailable  Boolean  @default(true)
+  imageUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // リレーション
+  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems   OrderItem[]   // メニューの注文履歴
+
+  @@index([storeId])
+}
+
+// 予約モデル
+model Reservation {
+  id              String           @id @default(cuid())
+  storeId         String
+  userId          String          // ClerkのユーザーID
+  reservationTime DateTime
+  customerName    String
+  phoneNumber     String
+  status          ReservationStatus @default(PENDING)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // リレーション
+  store          Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems     OrderItem[]      // 予約に含まれる注文項目
+
+  @@index([storeId])
+  @@index([userId])
+}
+
+// 注文項目モデル
+model OrderItem {
+  id            String      @id @default(cuid())
+  reservationId String
+  menuItemId    String
+  quantity      Int
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // リレーション
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  menuItem      MenuItem    @relation(fields: [menuItemId], references: [id])
+
+  @@index([reservationId])
+  @@index([menuItemId])
+}
+
+// 予約ステータスの列挙型
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+}
