@@ -9,12 +9,8 @@ import { RoleCard } from "../RoleCard";
 import { useRoleSelect } from "../../_hooks";
 import { USER_ROLES, UserRoleType } from "@/types/user";
 import { Flex } from "@/components/layout";
-
-/** リダイレクト先のパス */
-const REDIRECT_PATHS = {
-  STORE_OWNER: "/dashboard/store/new",
-  CUSTOMER: "/",
-} as const;
+import { ROLE_REDIRECT_PATHS } from "@/constants/auth/paths";
+import { AUTH_ERROR_MESSAGES } from "@/constants/auth/messages";
 
 /** フォームの状態を表す型 */
 type FormState = {
@@ -24,19 +20,15 @@ type FormState = {
   errorMessage: string;
 };
 
-/** 初期のフォーム状態 */
-const INITIAL_FORM_STATE: FormState = {
-  isLoading: false,
-  errorMessage: "",
-} as const;
-
 /**
  * 役割選択フォームコンポーネント
  * ユーザーが役割を選択し、選択結果を保存する
  */
 export const RoleSelectForm: FC = () => {
-  const [{ isLoading, errorMessage }, setFormState] =
-    useState<FormState>(INITIAL_FORM_STATE);
+  const [{ isLoading, errorMessage }, setFormState] = useState<FormState>({
+    isLoading: false,
+    errorMessage: "",
+  });
   const { handleRoleSelect } = useRoleSelect();
   const router = useRouter();
 
@@ -46,15 +38,12 @@ export const RoleSelectForm: FC = () => {
 
     try {
       await handleRoleSelect(role);
-      const redirectPath =
-        role === USER_ROLES.STORE_OWNER
-          ? REDIRECT_PATHS.STORE_OWNER
-          : REDIRECT_PATHS.CUSTOMER;
+      const redirectPath = ROLE_REDIRECT_PATHS[role];
       router.push(redirectPath);
     } catch (err) {
       setFormState({
         isLoading: false,
-        errorMessage: "役割の設定に失敗しました。もう一度お試しください。",
+        errorMessage: AUTH_ERROR_MESSAGES.ROLE_SELECT_FAILED,
       });
       console.error("Role selection failed:", err);
     }

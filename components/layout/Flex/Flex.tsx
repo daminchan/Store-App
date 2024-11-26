@@ -4,7 +4,7 @@ import { type FC, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /** Flexコンテナのプロパティ */
-type FlexProps = Readonly<{
+type FlexProps = {
   /** 子要素 */
   children: ReactNode;
   /** 方向 */
@@ -19,7 +19,7 @@ type FlexProps = Readonly<{
   gap?: "1" | "2" | "3" | "4" | "6" | "8";
   /** 追加のクラス名 */
   className?: string;
-}>;
+};
 
 /**
  * 汎用的なFlexboxレイアウトコンポーネント

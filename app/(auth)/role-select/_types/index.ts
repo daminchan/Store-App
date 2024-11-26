@@ -3,15 +3,15 @@
 import { UserRoleType } from "@/types/user";
 
 /** フォームの状態 */
-export type RoleSelectFormState = Readonly<{
+type FormState = {
   /** ローディング状態 */
   isLoading: boolean;
   /** エラーメッセージ */
   errorMessage: string;
-}>;
+};
 
 /** 役割選択カードのプロパティ */
-export type RoleCardProps = Readonly<{
+type RoleCardProps = {
   /** カードのタイトル */
   title: string;
   /** 役割の説明文 */
@@ -22,4 +22,6 @@ export type RoleCardProps = Readonly<{
   isDisabled: boolean;
   /** ユーザーの役割タイプ */
   role: UserRoleType;
-}>;
+};
+
+export type { FormState, RoleCardProps };
