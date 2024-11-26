@@ -1,5 +1,4 @@
 // src/app/(auth)/role-select/_actions/updateUserRole.ts
-
 "use server";
 
 import { auth, clerkClient } from "@clerk/nextjs/server";

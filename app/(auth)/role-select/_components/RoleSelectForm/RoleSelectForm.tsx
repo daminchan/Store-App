@@ -1,13 +1,28 @@
 // src/app/(auth)/role-select/_components/RoleSelectForm/RoleSelectForm.tsx
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 
-import { type RoleSelectFormState } from "../../_types";
+import { type FC } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { RoleCard } from "../RoleCard";
-import { USER_ROLES, UserRoleType } from "@/types/user";
 import { useRoleSelect } from "../../_hooks";
+import { USER_ROLES, UserRoleType } from "@/types/user";
+import { Flex } from "@/components/layout";
+
+/** リダイレクト先のパス */
+const REDIRECT_PATHS = {
+  STORE_OWNER: "/dashboard/store/new",
+  CUSTOMER: "/",
+} as const;
+
+/** フォームの状態を表す型 */
+type RoleSelectFormState = Readonly<{
+  /** ローディング状態 */
+  isLoading: boolean;
+  /** エラーメッセージ */
+  errorMessage: string;
+}>;
 
 /** 初期のフォーム状態 */
 const INITIAL_FORM_STATE: RoleSelectFormState = {
@@ -19,7 +34,7 @@ const INITIAL_FORM_STATE: RoleSelectFormState = {
  * 役割選択フォームコンポーネント
  * ユーザーが役割を選択し、選択結果を保存する
  */
-export const RoleSelectForm = () => {
+export const RoleSelectForm: FC = () => {
   const [formState, setFormState] =
     useState<RoleSelectFormState>(INITIAL_FORM_STATE);
   const { handleRoleSelect } = useRoleSelect();
@@ -32,7 +47,9 @@ export const RoleSelectForm = () => {
     try {
       await handleRoleSelect(role);
       const redirectPath =
-        role === USER_ROLES.STORE_OWNER ? "/dashboard/store/new" : "/";
+        role === USER_ROLES.STORE_OWNER
+          ? REDIRECT_PATHS.STORE_OWNER
+          : REDIRECT_PATHS.CUSTOMER;
       router.push(redirectPath);
     } catch (err) {
       setFormState({
@@ -44,8 +61,8 @@ export const RoleSelectForm = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4">
+    <Flex direction="column" gap="4">
+      <Flex direction="column" gap="4">
         <RoleCard
           title="店舗オーナー"
           description="お店の予約管理や情報更新ができます"
@@ -58,12 +75,12 @@ export const RoleSelectForm = () => {
           onSelect={() => handleSelect(USER_ROLES.CUSTOMER)}
           isDisabled={formState.isLoading}
         />
-      </div>
+      </Flex>
       {formState.errorMessage && (
-        <p className="text-sm text-red-600 text-center mt-4" role="alert">
-          {formState.errorMessage}
-        </p>
+        <Alert variant="destructive">
+          <AlertDescription>{formState.errorMessage}</AlertDescription>
+        </Alert>
       )}
-    </div>
+    </Flex>
   );
 };
