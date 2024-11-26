@@ -1,5 +1,5 @@
 // src/app/(auth)/role-select/_components/RoleSelectForm/RoleSelectForm.tsx
-
+"use client";
 import { type FC } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
