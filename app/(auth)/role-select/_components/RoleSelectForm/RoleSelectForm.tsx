@@ -61,21 +61,31 @@ export const RoleSelectForm: FC = () => {
   };
 
   return (
-    <Flex direction="column" gap="4">
+    <Flex direction="column" gap="6">
+      <h2 className="text-2xl font-semibold text-center text-foreground">
+        アカウントタイプを選択
+      </h2>
+      <p className="text-center text-muted-foreground">
+        あなたに最適な機能を提供するため、アカウントタイプをお選びください
+      </p>
+
       <Flex direction="column" gap="4">
         <RoleCard
           title="店舗オーナー"
-          description="お店の予約管理や情報更新ができます"
+          description="お店の予約管理や情報更新ができます。ビジネスアカウントとして機能が利用できます。"
           onSelect={() => handleSelect(USER_ROLES.STORE_OWNER)}
           isDisabled={formState.isLoading}
+          role={USER_ROLES.STORE_OWNER}
         />
         <RoleCard
           title="お客様"
-          description="お店の予約や情報閲覧ができます"
+          description="お店の予約や情報閲覧ができます。個人のお客様向けの機能が利用できます。"
           onSelect={() => handleSelect(USER_ROLES.CUSTOMER)}
           isDisabled={formState.isLoading}
+          role={USER_ROLES.CUSTOMER}
         />
       </Flex>
+
       {formState.errorMessage && (
         <Alert variant="destructive">
           <AlertDescription>{formState.errorMessage}</AlertDescription>

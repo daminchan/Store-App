@@ -1,5 +1,15 @@
 // src/app/(auth)/role-select/_types/index.ts
 
+import { UserRoleType } from "@/types/user";
+
+/** フォームの状態 */
+export type RoleSelectFormState = Readonly<{
+  /** ローディング状態 */
+  isLoading: boolean;
+  /** エラーメッセージ */
+  errorMessage: string;
+}>;
+
 /** 役割選択カードのプロパティ */
 export type RoleCardProps = Readonly<{
   /** カードのタイトル */
@@ -10,12 +20,6 @@ export type RoleCardProps = Readonly<{
   onSelect: () => Promise<void>;
   /** ボタンの無効化状態 */
   isDisabled: boolean;
-}>;
-
-/** フォームの状態 */
-export type RoleSelectFormState = Readonly<{
-  /** ローディング状態 */
-  isLoading: boolean;
-  /** エラーメッセージ */
-  errorMessage: string;
+  /** ユーザーの役割タイプ */
+  role: UserRoleType;
 }>;
