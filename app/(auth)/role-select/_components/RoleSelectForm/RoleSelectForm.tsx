@@ -17,15 +17,15 @@ const REDIRECT_PATHS = {
 } as const;
 
 /** フォームの状態を表す型 */
-type RoleSelectFormState = Readonly<{
+type FormState = {
   /** ローディング状態 */
   isLoading: boolean;
   /** エラーメッセージ */
   errorMessage: string;
-}>;
+};
 
 /** 初期のフォーム状態 */
-const INITIAL_FORM_STATE: RoleSelectFormState = {
+const INITIAL_FORM_STATE: FormState = {
   isLoading: false,
   errorMessage: "",
 } as const;
@@ -35,14 +35,14 @@ const INITIAL_FORM_STATE: RoleSelectFormState = {
  * ユーザーが役割を選択し、選択結果を保存する
  */
 export const RoleSelectForm: FC = () => {
-  const [formState, setFormState] =
-    useState<RoleSelectFormState>(INITIAL_FORM_STATE);
+  const [{ isLoading, errorMessage }, setFormState] =
+    useState<FormState>(INITIAL_FORM_STATE);
   const { handleRoleSelect } = useRoleSelect();
   const router = useRouter();
 
   /** 役割選択時の処理 */
   const handleSelect = async (role: UserRoleType): Promise<void> => {
-    setFormState({ ...INITIAL_FORM_STATE, isLoading: true });
+    setFormState({ isLoading: true, errorMessage: "" });
 
     try {
       await handleRoleSelect(role);
@@ -74,21 +74,21 @@ export const RoleSelectForm: FC = () => {
           title="店舗オーナー"
           description="お店の予約管理や情報更新ができます。ビジネスアカウントとして機能が利用できます。"
           onSelect={() => handleSelect(USER_ROLES.STORE_OWNER)}
-          isDisabled={formState.isLoading}
+          isDisabled={isLoading}
           role={USER_ROLES.STORE_OWNER}
         />
         <RoleCard
           title="お客様"
           description="お店の予約や情報閲覧ができます。個人のお客様向けの機能が利用できます。"
           onSelect={() => handleSelect(USER_ROLES.CUSTOMER)}
-          isDisabled={formState.isLoading}
+          isDisabled={isLoading}
           role={USER_ROLES.CUSTOMER}
         />
       </Flex>
 
-      {formState.errorMessage && (
+      {errorMessage && (
         <Alert variant="destructive">
-          <AlertDescription>{formState.errorMessage}</AlertDescription>
+          <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       )}
     </Flex>
