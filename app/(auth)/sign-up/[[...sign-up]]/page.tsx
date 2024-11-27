@@ -1,15 +1,15 @@
-import { FlexContainer } from "@/components/FlexBox/FlexContainer";
+import { Flex } from "@/components/layout";
 import { SignUp } from "@clerk/nextjs";
 
 export default function Page() {
   return (
-    <FlexContainer
+    <Flex
       direction="column"
       align="center"
       justify="center"
       className="min-h-screen"
     >
       <SignUp />
-    </FlexContainer>
+    </Flex>
   );
 }

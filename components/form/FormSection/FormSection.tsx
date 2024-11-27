@@ -32,7 +32,7 @@ export const FormSection: FC<FormSectionProps> = ({
   return (
     <div className={cn("rounded-lg border p-6 bg-card", className)}>
       <Flex direction="column" gap="4">
-        <Flex direction="column" gap="1.5">
+        <Flex direction="column" gap="2">
           <Flex align="center" gap="2">
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
             <Label className="text-lg font-semibold tracking-tight">
