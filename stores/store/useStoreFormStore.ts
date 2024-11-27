@@ -1,6 +1,14 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { BusinessHour, StoreFormState } from "@/types/store";
+import type { BusinessHour } from "@/types/store";
+
+interface StoreFormState {
+  name: string;
+  description: string;
+  categories: string[];
+  businessHours: BusinessHour[];
+  errors: Record<string, string>;
+}
 
 interface StoreFormStore extends StoreFormState {
   setName: (name: string) => void;

@@ -1,175 +1,135 @@
 "use client";
 
-import { type FC } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Flex } from "@/components/layout";
+import { type FC, useCallback } from "react";
 import type { BusinessHour } from "@/types/store";
-import { parse, format, isValid, isBefore } from "date-fns";
-import { ja } from "date-fns/locale";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Flex } from "@/components/layout";
+import { cn } from "@/lib/utils";
 
-const DAYS_OF_WEEK = [
-  { value: 0, label: "日曜日" },
-  { value: 1, label: "月曜日" },
-  { value: 2, label: "火曜日" },
-  { value: 3, label: "水曜日" },
-  { value: 4, label: "木曜日" },
-  { value: 5, label: "金曜日" },
-  { value: 6, label: "土曜日" },
-] as const;
-
-// 30分単位の時間選択肢を生成
-const HOURS = Array.from({ length: 48 }, (_, i) => {
-  const date = new Date();
-  date.setHours(Math.floor(i / 2), (i % 2) * 30, 0);
-  return {
-    value: format(date, "HH:mm"),
-    label: format(date, "HH:mm", { locale: ja }),
-  };
-});
-
-interface Props {
+interface BusinessHourFormProps {
   businessHours: BusinessHour[];
-  onChange: (businessHours: BusinessHour[]) => void;
+  onChange: (hours: BusinessHour[]) => void;
   error?: string;
 }
 
+const DAYS_OF_WEEK = ["日", "月", "火", "水", "木", "金", "土"] as const;
+type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
+
+// 初期値として全曜日分のデータを用意
+const INITIAL_BUSINESS_HOURS: Readonly<BusinessHour[]> = DAYS_OF_WEEK.map(
+  (_, index) => ({
+    dayOfWeek: index,
+    openTime: "09:00",
+    closeTime: "17:00",
+    isHoliday: false,
+  })
+);
+
 /**
  * 営業時間設定フォームコンポーネント
- * 各曜日の営業時間を30分単位で設定できる
  */
-export const BusinessHourForm: FC<Props> = ({
+export const BusinessHourForm: FC<BusinessHourFormProps> = ({
   businessHours,
   onChange,
   error,
 }) => {
-  /**
-   * 営業時間の変更を処理する関数
-   * @param dayOfWeek - 曜日（0-6: 日-土）
-   * @param field - 変更する項目（開店時間または閉店時間）
-   * @param value - 新しい時間値（HH:mm形式）
-   * @returns void
-   */
-  const handleTimeChange = (
-    dayOfWeek: number,
-    field: "openTime" | "closeTime",
-    value: string
-  ) => {
-    const newBusinessHours = businessHours.map((hour) => {
-      if (hour.dayOfWeek === dayOfWeek) {
-        const updatedHour = { ...hour, [field]: value };
-        const { openTime, closeTime } = updatedHour;
-
-        // 開店時間と閉店時間の妥当性チェック
-        const parsedOpenTime = parse(openTime, "HH:mm", new Date());
-        const parsedCloseTime = parse(closeTime, "HH:mm", new Date());
-
-        if (!isValid(parsedOpenTime) || !isValid(parsedCloseTime)) {
-          return hour;
-        }
-
-        // 閉店時間が開店時間より前の場合は更新しない
-        if (isBefore(parsedCloseTime, parsedOpenTime)) {
-          return hour;
-        }
-
-        return updatedHour;
-      }
-      return hour;
-    });
-
-    onChange(newBusinessHours);
-  };
+  // 初期表示時に全曜日分のデータがない場合は初期値を設定
+  const hours =
+    businessHours.length === 7 ? businessHours : INITIAL_BUSINESS_HOURS;
 
   /**
-   * 営業日の切り替えを処理する関数
-   * @param dayOfWeek - 曜日（0-6: 日-土）
-   * @param isOpen - 営業/休業の状態
-   * @returns void
+   * 休業日の切り替え処理
    */
-  const handleDayToggle = (dayOfWeek: number, isOpen: boolean) => {
-    if (isOpen) {
-      const newBusinessHour: BusinessHour = {
-        dayOfWeek,
-        openTime: "09:00",
-        closeTime: "17:00",
-      };
-      onChange([...businessHours, newBusinessHour]);
-    } else {
-      onChange(businessHours.filter((hour) => hour.dayOfWeek !== dayOfWeek));
-    }
-  };
+  const handleHolidayChange = useCallback(
+    (dayOfWeek: number, checked: boolean) => {
+      const newHours = hours.map((hour) =>
+        hour.dayOfWeek === dayOfWeek ? { ...hour, isHoliday: checked } : hour
+      );
+      onChange(newHours);
+    },
+    [hours, onChange]
+  );
+
+  /**
+   * 営業時間の変更処理
+   */
+  const handleTimeChange = useCallback(
+    (dayOfWeek: number, field: "openTime" | "closeTime", value: string) => {
+      const newHours = hours.map((hour) =>
+        hour.dayOfWeek === dayOfWeek ? { ...hour, [field]: value } : hour
+      );
+      onChange(newHours);
+    },
+    [hours, onChange]
+  );
 
   return (
     <Flex direction="column" gap="4">
-      {DAYS_OF_WEEK.map(({ value: dayOfWeek, label }) => {
-        const businessHour = businessHours.find(
-          (hour) => hour.dayOfWeek === dayOfWeek
-        );
-        const isOpen = !!businessHour;
+      {DAYS_OF_WEEK.map((day, index) => {
+        const hour = hours[index];
 
         return (
-          <Flex key={dayOfWeek} align="center" gap="4">
-            <Flex className="w-24">
+          <Flex key={day} align="center" gap="6">
+            {/* 曜日と休業日チェックボックス */}
+            <Flex className="w-32" align="center" justify="between">
+              <Label
+                className={cn("w-6 text-center", {
+                  "text-red-500": index === 0, // 日曜日
+                  "text-blue-500": index === 6, // 土曜日
+                })}
+              >
+                {day}
+              </Label>
               <Flex align="center" gap="2">
-                <Switch
-                  checked={isOpen}
-                  onCheckedChange={(checked: boolean) =>
-                    handleDayToggle(dayOfWeek, checked)
+                <Checkbox
+                  id={`holiday-${index}`}
+                  checked={hour.isHoliday}
+                  onCheckedChange={(checked) =>
+                    handleHolidayChange(index, checked as boolean)
                   }
                 />
-                <span className="text-sm font-medium">{label}</span>
+                <Label htmlFor={`holiday-${index}`} className="text-sm">
+                  休業日
+                </Label>
               </Flex>
             </Flex>
-            {isOpen && businessHour && (
-              <Flex align="center" gap="4">
-                <Select
-                  value={businessHour.openTime}
-                  onValueChange={(value: string) =>
-                    handleTimeChange(dayOfWeek, "openTime", value)
+
+            {/* 時間入力 */}
+            {!hour.isHoliday && (
+              <Flex align="center" gap="2">
+                <input
+                  type="time"
+                  value={hour.openTime}
+                  onChange={(e) =>
+                    handleTimeChange(index, "openTime", e.target.value)
                   }
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="開店時間" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {HOURS.map(({ value, label }) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-sm">〜</span>
-                <Select
-                  value={businessHour.closeTime}
-                  onValueChange={(value: string) =>
-                    handleTimeChange(dayOfWeek, "closeTime", value)
+                  className="px-2 py-1 border rounded w-32"
+                />
+                <span className="text-sm text-muted-foreground">〜</span>
+                <input
+                  type="time"
+                  value={hour.closeTime}
+                  onChange={(e) =>
+                    handleTimeChange(index, "closeTime", e.target.value)
                   }
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="閉店時間" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {HOURS.map(({ value, label }) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  className="px-2 py-1 border rounded w-32"
+                />
               </Flex>
             )}
           </Flex>
         );
       })}
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && (
+        <p
+          className={cn("text-sm", {
+            "text-emerald-500": error.startsWith("✓"),
+            "text-red-500": !error.startsWith("✓"),
+          })}
+        >
+          {error}
+        </p>
+      )}
     </Flex>
   );
 };

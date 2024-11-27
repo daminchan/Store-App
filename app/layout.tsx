@@ -10,6 +10,7 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { jaJP } from "@clerk/localizations";
+import { Toaster } from "@/components/ui/toaster";
 
 // const geistSans = localFont({
 //   src: "./fonts/GeistVF.woff",
@@ -43,6 +44,7 @@ export default function RootLayout({
             <UserButton />
           </SignedIn>
           {children}
+          <Toaster />
         </body>
       </html>
     </ClerkProvider>

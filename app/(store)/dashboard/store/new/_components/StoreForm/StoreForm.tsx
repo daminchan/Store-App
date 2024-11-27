@@ -1,145 +1,129 @@
 "use client";
 
-import { type FC, type ChangeEvent } from "react";
-import { useStoreFormStore } from "@/stores/store";
-import { STORE_VALIDATION, STORE_CATEGORIES } from "@/constants/store";
-import { Input } from "@/components/ui/input";
+import { type FC } from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { BusinessHourForm } from "./BusinessHourForm";
+import { Flex } from "@/components/layout";
+import { useStoreFormStore } from "@/stores/store";
+import { useStoreValidation } from "../../_hooks/useStoreValidation";
+import { useNotification } from "@/hooks/common";
+import { STORE_MESSAGES } from "@/constants/store";
+import {
+  NameSection,
+  DescriptionSection,
+  CategoriesSection,
+  BusinessHoursSection,
+} from "./sections";
+import { CheckCircle2, AlertCircle, Info, Store } from "lucide-react";
 
+/**
+ * 店舗情報登録フォームコンポーネント
+ * @description 店舗の基本情報、カテゴリ、営業時間を設定するフォーム
+ */
 export const StoreForm: FC = () => {
-  const { NAME, DESCRIPTION, CATEGORIES, BUSINESS_HOURS } = STORE_VALIDATION;
-  const {
-    name,
-    description,
-    categories,
-    businessHours,
-    errors,
-    setName,
-    setDescription,
-    setCategories,
-    setBusinessHours,
-  } = useStoreFormStore();
+  const { reset } = useStoreFormStore();
+  const { validateForm } = useStoreValidation();
+  const { showNotification } = useNotification();
 
+  /**
+   * フォームの送信を処理する関数
+   * バリデーションを行い、エラーがなければデータを送信する
+   */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // TODO: バリデーションと送信処理の実装
-  };
 
-  const handleDescriptionChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setDescription(e.target.value);
-  };
+    if (!validateForm()) {
+      showNotification(
+        <Flex align="center" gap="2">
+          <AlertCircle className="h-5 w-5 text-red-500" />
+          <span>入力内容に誤りがあります。</span>
+        </Flex>,
+        { type: "error" }
+      );
+      return;
+    }
 
-  const handleCategoryChange = (categoryId: string, checked: boolean) => {
-    const newCategories = checked
-      ? [...categories, categoryId]
-      : categories.filter((id) => id !== categoryId);
-
-    if (newCategories.length <= 5) {
-      setCategories(newCategories);
+    try {
+      // TODO: APIエンドポイントへのデータ送信処理
+      console.log("TODO: Send data to API");
+      showNotification(
+        <Flex align="center" gap="2">
+          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          <span>{STORE_MESSAGES.SUCCESS.CREATE}</span>
+        </Flex>,
+        { type: "success" }
+      );
+    } catch (error) {
+      console.error("Failed to submit form:", error);
+      showNotification(
+        <Flex align="center" gap="2">
+          <AlertCircle className="h-5 w-5 text-red-500" />
+          <span>{STORE_MESSAGES.ERROR.CREATE}</span>
+        </Flex>,
+        { type: "error" }
+      );
     }
   };
 
+  /**
+   * フォームのリセット処理
+   */
+  const handleReset = () => {
+    reset();
+    showNotification(
+      <Flex align="center" gap="2">
+        <Info className="h-5 w-5 text-blue-500" />
+        <span>フォームをリセットしました</span>
+      </Flex>,
+      { type: "info" }
+    );
+  };
+
   return (
-    <Card className="p-6">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <label htmlFor="name" className="text-sm font-medium">
-            店舗名
-            <span className="text-red-500 ml-1">*</span>
-          </label>
-          <Input
-            id="name"
-            value={name}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setName(e.target.value)
-            }
-            placeholder="店舗名を入力してください"
-            aria-describedby="name-error"
-          />
-          {errors.name && (
-            <p id="name-error" className="text-sm text-red-500">
-              {errors.name}
-            </p>
-          )}
-        </div>
+    <Card className="max-w-4xl mx-auto shadow-lg">
+      <CardHeader className="space-y-2 pb-6">
+        <Flex align="center" gap="2">
+          <Store className="h-6 w-6 text-primary" />
+          <CardTitle className="text-2xl">店舗情報の登録</CardTitle>
+        </Flex>
+        <CardDescription className="text-base">
+          店舗の基本情報、カテゴリ、営業時間を設定してください。
+          すべての必須項目（<span className="text-red-500">*</span>
+          ）を入力する必要があります。
+        </CardDescription>
+      </CardHeader>
 
-        <div className="space-y-2">
-          <label htmlFor="description" className="text-sm font-medium">
-            店舗説明
-          </label>
-          <Textarea
-            id="description"
-            value={description}
-            onChange={handleDescriptionChange}
-            placeholder="店舗の説明を入力してください"
-            rows={4}
-            aria-describedby="description-error"
-          />
-          {errors.description && (
-            <p id="description-error" className="text-sm text-red-500">
-              {errors.description}
-            </p>
-          )}
-        </div>
+      <CardContent>
+        <form id="store-form" onSubmit={handleSubmit}>
+          <Flex direction="column" gap="6">
+            <NameSection />
+            <DescriptionSection />
+            <CategoriesSection />
+            <BusinessHoursSection />
+          </Flex>
+        </form>
+      </CardContent>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            カテゴリ
-            <span className="text-red-500 ml-1">*</span>
-            <span className="text-sm text-gray-500 ml-2">（最大5つまで）</span>
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {STORE_CATEGORIES.map(({ id, label }) => (
-              <div key={id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`category-${id}`}
-                  checked={categories.includes(id)}
-                  onCheckedChange={(checked) =>
-                    handleCategoryChange(id, checked as boolean)
-                  }
-                  disabled={!categories.includes(id) && categories.length >= 5}
-                />
-                <label
-                  htmlFor={`category-${id}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {label}
-                </label>
-              </div>
-            ))}
-          </div>
-          {errors.categories && (
-            <p className="text-sm text-red-500">{errors.categories}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            営業時間
-            <span className="text-red-500 ml-1">*</span>
-          </label>
-          <BusinessHourForm
-            businessHours={businessHours}
-            onChange={setBusinessHours}
-            error={errors.businessHours}
-          />
-        </div>
-
-        <div className="flex justify-end space-x-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => useStoreFormStore.getState().reset()}
-          >
-            リセット
-          </Button>
-          <Button type="submit">登録する</Button>
-        </div>
-      </form>
+      <CardFooter className="flex justify-end space-x-4 bg-muted/50 p-6">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleReset}
+          className="px-6"
+        >
+          リセット
+        </Button>
+        <Button type="submit" form="store-form" className="px-6">
+          登録する
+        </Button>
+      </CardFooter>
     </Card>
   );
 };
