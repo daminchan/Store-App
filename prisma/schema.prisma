@@ -13,6 +13,28 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
+
+// カテゴリーの列挙型
+enum StoreCategory {
+  JAPANESE
+  CHINESE
+  WESTERN
+  ITALIAN
+  FRENCH
+  KOREAN
+  CAFE
+  OTHER
+}
+
+// メニューカテゴリーの列挙型
+enum MenuCategory {
+  MAIN
+  SIDE
+  DRINK
+  DESSERT
+  OTHER
+}
+
 // 店舗モデル
 model Store {
   id            String         @id @default(cuid())
@@ -20,7 +42,7 @@ model Store {
   description   String
   businessHours BusinessHour[] // 1対多の関係
   ownerId       String         // ClerkのユーザーID
-  categories    String[]       // PostgreSQLの配列型を使用
+  categories    StoreCategory[] // 列挙型の配列に変更
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -38,6 +60,7 @@ model BusinessHour {
   dayOfWeek Int      // 0-6 (日曜-土曜)
   openTime  String   // "09:00" 形式
   closeTime String   // "17:00" 形式
+  isHoliday Boolean  @default(false) // 休業日フラグを追加
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -49,21 +72,21 @@ model BusinessHour {
 
 // メニューモデル
 model MenuItem {
-  id           String   @id @default(cuid())
+  id           String      @id @default(cuid())
   storeId      String
   name         String
   price        Int
   description  String
-  category     String
-  internalTags String[] // PostgreSQLの配列型を使用
-  isAvailable  Boolean  @default(true)
+  category     MenuCategory // 列挙型に変更
+  internalTags String[]    // PostgreSQLの配列型を使用
+  isAvailable  Boolean     @default(true)
   imageUrl     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   // リレーション
-  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  orderItems   OrderItem[]   // メニューの注文履歴
+  store        Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems   OrderItem[] // メニューの注文履歴
 
   @@index([storeId])
 }

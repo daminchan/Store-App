@@ -1,6 +1,22 @@
-import { ReservationStatus } from "./status";
+/**
+ * 予約ステータスの列挙型
+ * @description 予約の状態を表す列挙型
+ */
+export enum ReservationStatus {
+  /** 予約待ち */
+  PENDING = "PENDING",
+  /** 予約確定 */
+  CONFIRMED = "CONFIRMED",
+  /** 予約拒否 */
+  REJECTED = "REJECTED",
+  /** 予約キャンセル */
+  CANCELLED = "CANCELLED",
+}
 
-/** 予約情報を表す型 */
+/**
+ * 予約の型定義
+ * @description 店舗の予約情報を表す型
+ */
 export type Reservation = {
   /** 予約の一意のID */
   id: string;
@@ -12,22 +28,12 @@ export type Reservation = {
   reservationTime: Date;
   /** 予約者名 */
   customerName: string;
-  /** 予約者の電話番号 */
+  /** 連絡先電話番号 */
   phoneNumber: string;
-  /** 予約したメニューの配列 */
-  items: OrderItem[];
   /** 予約のステータス */
   status: ReservationStatus;
-  /** 予約情報の作成日時 */
+  /** 作成日時 */
   createdAt: Date;
-  /** 予約情報の最終更新日時 */
+  /** 更新日時 */
   updatedAt: Date;
-};
-
-/** 予約内の注文項目を表す型 */
-export type OrderItem = {
-  /** 注文するメニューのID */
-  menuItemId: string;
-  /** 注文数量 */
-  quantity: number;
 };

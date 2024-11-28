@@ -1,2 +1,2 @@
-export * from "./reservation";
-export * from "./status";
+export type { Reservation } from "./reservation";
+export { ReservationStatus } from "./reservation";

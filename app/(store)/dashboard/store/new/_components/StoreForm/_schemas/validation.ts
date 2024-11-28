@@ -29,6 +29,8 @@ export const businessHourSchema = z
     closeTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
       message: STORE_VALIDATION.BUSINESS_HOURS.TIME_FORMAT,
     }),
+    // 休業日フラグ
+    isHoliday: z.boolean().default(false),
   })
   // 開店時間と閉店時間の整合性チェック
   .refine(
