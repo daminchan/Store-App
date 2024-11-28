@@ -35,6 +35,33 @@ enum MenuCategory {
   OTHER
 }
 
+// 予約ステータスの列挙型
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+}
+
+// 招待コードモデル
+model InvitationCode {
+  id        String    @id @default(cuid())
+  code      String    @unique // 実際の招待コード（例：STORE-XXXX-XXXX）
+  isUsed    Boolean   @default(false)
+  isDisabled Boolean  @default(false)
+  usedBy    String?   // 使用したユーザーのClerk ID
+  usedAt    DateTime? // 使用日時
+  expiresAt DateTime  // 有効期限
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // リレーション
+  store   Store?  @relation(fields: [storeId], references: [id])
+  storeId String? @unique // 1対1の関係を強制
+
+  @@index([code])
+}
+
 // 店舗モデル
 model Store {
   id            String         @id @default(cuid())
@@ -47,8 +74,9 @@ model Store {
   updatedAt     DateTime       @updatedAt
 
   // リレーション
-  menus        MenuItem[]     // 店舗の持つメニュー
-  reservations Reservation[]  // 店舗の予約一覧
+  menus          MenuItem[]      // 店舗の持つメニュー
+  reservations   Reservation[]   // 店舗の予約一覧
+  invitationCode InvitationCode? // 店舗の招待コード（1対1）
 
   @@index([ownerId])
 }
@@ -65,7 +93,7 @@ model BusinessHour {
   updatedAt DateTime @updatedAt
 
   // リレーション
-  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@index([storeId])
 }
@@ -85,8 +113,8 @@ model MenuItem {
   updatedAt    DateTime    @updatedAt
 
   // リレーション
-  store        Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  orderItems   OrderItem[] // メニューの注文履歴
+  store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[] // メニューの注文履歴
 
   @@index([storeId])
 }
@@ -104,8 +132,8 @@ model Reservation {
   updatedAt       DateTime         @updatedAt
 
   // リレーション
-  store          Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  orderItems     OrderItem[]      // 予約に含まれる注文項目
+  store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[] // 予約に含まれる注文項目
 
   @@index([storeId])
   @@index([userId])
@@ -121,17 +149,9 @@ model OrderItem {
   updatedAt     DateTime    @updatedAt
 
   // リレーション
-  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-  menuItem      MenuItem    @relation(fields: [menuItemId], references: [id])
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  menuItem    MenuItem    @relation(fields: [menuItemId], references: [id])
 
   @@index([reservationId])
   @@index([menuItemId])
-}
-
-// 予約ステータスの列挙型
-enum ReservationStatus {
-  PENDING
-  CONFIRMED
-  REJECTED
-  CANCELLED
 }

@@ -10,67 +10,23 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Flex } from "@/components/layout/Flex";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { useNotification } from "@/hooks/common";
 import { useStoreFormStore } from "@/stores/store";
 import { useStoreValidation } from "../../_hooks/useStoreValidation";
-import { useNotification } from "@/hooks/common";
+import { createStore } from "../../_actions/createStore";
 import { STORE_MESSAGES } from "@/constants/store";
+import type { StoreCategory } from "@/constants/store/categories";
+import { Flex } from "@/components/layout/Flex";
+import { Store } from "lucide-react";
 import {
   NameSection,
   DescriptionSection,
   CategoriesSection,
   BusinessHoursSection,
 } from "./sections";
-import { CheckCircle2, AlertCircle, Info, Store } from "lucide-react";
-import { createStore } from "../../_actions/createStore";
-import { useTransition } from "react";
-import { type StoreCategory } from "@/constants/store/categories";
-import { useRouter } from "next/navigation";
 
-/**
- * 通知メッセージのコンポーネントを生成する関数
- */
-const createNotificationMessage = (
-  icon: React.ReactNode,
-  message: string
-): React.ReactNode => (
-  <Flex align="center" gap="2">
-    {icon}
-    <span>{message}</span>
-  </Flex>
-);
-
-/**
- * エラー通知のメッセージを生成する関数
- */
-const createErrorNotification = (message: string): React.ReactNode =>
-  createNotificationMessage(
-    <AlertCircle className="h-5 w-5 text-red-500" />,
-    message
-  );
-
-/**
- * 成功通知のメッセージを生成する関数
- */
-const createSuccessNotification = (message: string): React.ReactNode =>
-  createNotificationMessage(
-    <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
-    message
-  );
-
-/**
- * 情報通知のメッセージを生成する関数
- */
-const createInfoNotification = (message: string): React.ReactNode =>
-  createNotificationMessage(
-    <Info className="h-5 w-5 text-blue-500" />,
-    message
-  );
-
-/**
- * 店舗情報登録フォームコンポーネント
- * @description 店舗の基本情報、カテゴリ、営業時間を設定するフォーム
- */
 export const StoreForm: FC = () => {
   const router = useRouter();
   const { name, description, categories, businessHours, reset } =
@@ -96,7 +52,9 @@ export const StoreForm: FC = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      showNotification(createErrorNotification("入力内容に誤りがあります。"), {
+      showNotification({
+        title: "エラー",
+        description: "入力内容に誤りがあります。",
         type: "error",
       });
       return;
@@ -108,20 +66,25 @@ export const StoreForm: FC = () => {
         const result = await createStore(formData);
 
         if ("success" in result) {
-          showNotification(
-            createSuccessNotification(STORE_MESSAGES.SUCCESS.CREATE),
-            { type: "success" }
-          );
+          showNotification({
+            title: "成功",
+            description: STORE_MESSAGES.SUCCESS.CREATE,
+            type: "success",
+          });
           // 成功時は店舗詳細ページにリダイレクト
           router.push(`/dashboard/store/${result.storeId}`);
         } else {
-          showNotification(createErrorNotification(result.message), {
+          showNotification({
+            title: "エラー",
+            description: result.message,
             type: "error",
           });
         }
       } catch (error) {
         console.error("Failed to submit form:", error);
-        showNotification(createErrorNotification(STORE_MESSAGES.ERROR.CREATE), {
+        showNotification({
+          title: "エラー",
+          description: STORE_MESSAGES.ERROR.CREATE,
           type: "error",
         });
       }
@@ -133,7 +96,9 @@ export const StoreForm: FC = () => {
    */
   const handleReset = () => {
     reset();
-    showNotification(createInfoNotification("フォームをリセットしました"), {
+    showNotification({
+      title: "お知らせ",
+      description: "フォームをリセットしました",
       type: "info",
     });
   };

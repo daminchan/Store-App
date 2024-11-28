@@ -1,0 +1,1 @@
+export { validateInvitation } from "./validateInvitation";
