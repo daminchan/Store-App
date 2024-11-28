@@ -2,47 +2,52 @@
 
 import { type FC } from "react";
 import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
-import { useInvitationList } from "./hooks/useInvitationList";
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { Flex } from "@/components/layout/Flex/Flex";
 import { InvitationListItem } from "./InvitationListItem";
 import { InvitationListSkeleton } from "./components";
+import { useInvitationList } from "./hooks/useInvitationList";
 
 /**
  * 招待コード一覧コンポーネント
- * @description 招待コードの一覧を表示し、無効化・削除の操作を提供する
+ * @description 生成された招待コードの一覧を表示し、無効化や削除を行う
  */
 export const InvitationList: FC = () => {
   const { invitationCodes, isLoading, handleDisable, handleDelete } =
     useInvitationList();
 
-  if (isLoading) {
-    return <InvitationListSkeleton />;
-  }
-
   return (
-    <div className="rounded-lg border">
-      <div className="p-4">
-        <h2 className="text-xl font-semibold">招待コード一覧</h2>
-      </div>
-      <div className="border-t">
-        <Table aria-label="招待コード一覧">
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">コード</TableHead>
-              <TableHead scope="col">状態</TableHead>
-              <TableHead scope="col">使用者</TableHead>
-              <TableHead scope="col">使用日時</TableHead>
-              <TableHead scope="col">有効期限</TableHead>
-              <TableHead scope="col">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+    <Card>
+      <CardHeader>
+        <CardTitle>招待コード一覧</CardTitle>
+        <CardDescription>
+          生成された招待コードの一覧です。使用済みまたは期限切れの招待コードは自動的に無効化されます
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <InvitationListSkeleton />
+        ) : invitationCodes.length === 0 ? (
+          <Flex
+            direction="column"
+            align="center"
+            justify="center"
+            className="min-h-[200px] rounded-lg border border-dashed"
+          >
+            <p className="text-lg font-medium text-muted-foreground">
+              招待コードはまだ生成されていません
+            </p>
+            <p className="text-sm text-muted-foreground">
+              上のフォームから新しい招待コードを生成してください
+            </p>
+          </Flex>
+        ) : (
+          <Flex direction="column" gap="4">
             {invitationCodes.map((code) => (
               <InvitationListItem
                 key={code.id}
@@ -51,20 +56,9 @@ export const InvitationList: FC = () => {
                 onDelete={handleDelete}
               />
             ))}
-            {invitationCodes.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-center py-4"
-                  aria-label="データなし"
-                >
-                  招待コードがありません
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
+          </Flex>
+        )}
+      </CardContent>
+    </Card>
   );
 };

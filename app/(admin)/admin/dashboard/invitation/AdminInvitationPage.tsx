@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC } from "react";
+import { Flex } from "@/components/layout/Flex/Flex";
 import { InvitationList, InvitationForm } from "./_components";
 
 /**
@@ -9,12 +10,12 @@ import { InvitationList, InvitationForm } from "./_components";
  */
 export const AdminInvitationPage: FC = () => {
   return (
-    <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold">招待コード管理</h1>
-      <div className="grid gap-6">
+    <Flex direction="column" gap="6" className="p-6">
+      <h1 className="text-3xl font-bold tracking-tight">招待コード管理</h1>
+      <Flex direction="column" gap="6">
         <InvitationForm />
         <InvitationList />
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 };
