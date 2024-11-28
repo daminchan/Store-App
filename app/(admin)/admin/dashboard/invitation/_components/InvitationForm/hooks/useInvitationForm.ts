@@ -2,10 +2,16 @@ import { useState } from "react";
 import { useNotification } from "@/hooks/common";
 import { generateInvitationCode } from "../../../_actions";
 import type { GeneratedInvitationCodeResponse } from "@/types/invitation";
+import { INVITATION_EVENTS } from "../../../_events/invitation";
 
 /**
  * 招待コード生成フォームのカスタムフック
  * @description フォームの状態管理とバリデーション、エラーハンドリングを行う
+ *
+ * 機能:
+ * - 招待コードの生成処理
+ * - バリデーション（1-365日の範囲チェック）
+ * - 生成成功時にCODE_GENERATEDイベントを発火し、リスト側の自動更新をトリガー
  */
 export const useInvitationForm = () => {
   const [validDays, setValidDays] = useState(30);
@@ -36,6 +42,10 @@ export const useInvitationForm = () => {
           description: `招待コード: ${result.data.code}を生成しました`,
           type: "success",
         });
+        // 招待コード生成イベントを発火
+        // このイベントをInvitationListコンポーネントが購読し、一覧を自動更新
+        const event = new CustomEvent(INVITATION_EVENTS.CODE_GENERATED);
+        window.dispatchEvent(event);
       } else {
         showNotification({
           title: "エラー",
