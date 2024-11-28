@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNotification } from "@/hooks/common";
 import { generateInvitationCode } from "../../../_actions";
-import type { GeneratedInvitationCodeResponse } from "@/types/invitation";
+
 import { INVITATION_EVENTS } from "../../../_events/invitation";
 
 /**

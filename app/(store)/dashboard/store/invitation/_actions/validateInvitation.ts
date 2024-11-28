@@ -2,34 +2,14 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
-import { type InvitationFormSchema } from "../_components/InvitationForm/_schemas/validation";
-
-/**
- * エラーメッセージの型定義
- */
-export type ValidateInvitationError = {
-  message: string;
-  errors?: Record<string, string>;
-};
-
-/** エラーメッセージ */
-const ERROR_MESSAGES = {
-  INVALID_FORMAT: "招待コードは8桁の数字で入力してください",
-  NOT_FOUND: "無効な招待コードです",
-  ALREADY_USED: "この招待コードは既に使用されています",
-  EXPIRED: "この招待コードは有効期限が切れています",
-  UNAUTHORIZED: "認証が必要です",
-  UNEXPECTED: "予期せぬエラーが発生しました",
-} as const;
-
-/**
- * 招待コードの形式を検証
- * @param code 検証する招待コード
- * @returns 有効な形式かどうか
- */
-const isValidFormat = (code: string): boolean => {
-  return /^\d{8}$/.test(code);
-};
+import { headers } from "next/headers";
+import { checkRateLimit } from "../_middleware/rateLimit";
+import {
+  type InvitationFormSchema,
+  type ValidateInvitationError,
+  ERROR_MESSAGES,
+  INVITATION_CODE_PATTERN,
+} from "@/types/invitation";
 
 /**
  * 招待コードを検証するServer Action
@@ -49,11 +29,29 @@ export async function validateInvitation({
       };
     }
 
-    // 形式チェック
-    if (!isValidFormat(code)) {
+    // レート制限のチェック
+    // Upstash/Redis + Next.js Middlewareを使用したレート制限の実装
+    // 1. next/headersからX-Forwarded-Forヘッダーを非同期で取得
+    // 2. クライアントのIPアドレスを特定（プロキシ経由の場合は最初のIPを使用）
+    // 3. Upstash/Redisを使用して指定時間内のリクエスト数を制限
+    const headersList = await headers();
+    const forwardedFor = headersList.get("x-forwarded-for");
+    const ip = forwardedFor?.split(",")[0] ?? "127.0.0.1";
+    const isAllowed = await checkRateLimit({
+      headers: new Headers({ "x-forwarded-for": ip }),
+    } as any);
+    if (!isAllowed) {
       return {
-        message: ERROR_MESSAGES.INVALID_FORMAT,
-        errors: { code: ERROR_MESSAGES.INVALID_FORMAT },
+        message: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED,
+        errors: { code: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED },
+      };
+    }
+
+    // 形式チェック
+    if (!INVITATION_CODE_PATTERN.test(code)) {
+      return {
+        message: ERROR_MESSAGES.VALIDATION_ERROR,
+        errors: { code: ERROR_MESSAGES.VALIDATION_ERROR },
       };
     }
 
@@ -78,6 +76,14 @@ export async function validateInvitation({
       };
     }
 
+    // 無効化チェック
+    if (invitationCode.isDisabled) {
+      return {
+        message: ERROR_MESSAGES.ALREADY_DISABLED,
+        errors: { code: ERROR_MESSAGES.ALREADY_DISABLED },
+      };
+    }
+
     // 有効期限チェック
     if (invitationCode.expiresAt < new Date()) {
       return {
@@ -95,6 +101,9 @@ export async function validateInvitation({
         usedAt: new Date(),
       },
     });
+
+    // TODO: ユーザーロールの更新処理を追加
+    // await updateUserRole(userId, "STORE_OWNER");
 
     return { success: true };
   } catch (error) {
