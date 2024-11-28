@@ -3,22 +3,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-
-/**
- * エラーメッセージの型定義
- */
-export type DeleteInvitationError = {
-  message: string;
-  errors?: Record<string, string>;
-};
-
-/** エラーメッセージ */
-const ERROR_MESSAGES = {
-  UNAUTHORIZED: "この操作を実行する権限がありません",
-  NOT_FOUND: "招待コードが見つかりません",
-  ALREADY_USED: "使用済みの招待コードは削除できません",
-  UNEXPECTED: "予期せぬエラーが発生しました",
-} as const;
+import {
+  type InvitationCodeResponse,
+  ERROR_MESSAGES,
+} from "@/types/invitation";
 
 /**
  * 招待コードを削除するServer Action
@@ -26,13 +14,18 @@ const ERROR_MESSAGES = {
  */
 export async function deleteInvitationCode(
   codeId: string
-): Promise<{ success: true } | DeleteInvitationError> {
+): Promise<InvitationCodeResponse> {
   try {
     // 認証チェック
     const { userId } = await auth();
     if (!userId) {
+      console.error("認証エラー: ユーザーIDが見つかりません");
       return {
-        message: ERROR_MESSAGES.UNAUTHORIZED,
+        success: false,
+        error: {
+          type: "UNAUTHORIZED",
+          message: ERROR_MESSAGES.UNAUTHORIZED,
+        },
       };
     }
 
@@ -43,30 +36,45 @@ export async function deleteInvitationCode(
 
     if (!invitationCode) {
       return {
-        message: ERROR_MESSAGES.NOT_FOUND,
+        success: false,
+        error: {
+          type: "NOT_FOUND",
+          message: ERROR_MESSAGES.NOT_FOUND,
+        },
       };
     }
 
     // 使用済みかチェック
     if (invitationCode.isUsed) {
       return {
-        message: ERROR_MESSAGES.ALREADY_USED,
+        success: false,
+        error: {
+          type: "ALREADY_USED",
+          message: ERROR_MESSAGES.ALREADY_USED,
+        },
       };
     }
 
     // 削除を実行
-    await db.invitationCode.delete({
+    const deletedCode = await db.invitationCode.delete({
       where: { id: codeId },
     });
 
     // キャッシュを更新
     revalidatePath("/admin/dashboard/invitation");
 
-    return { success: true };
-  } catch (error) {
-    console.error("Failed to delete invitation code:", error);
     return {
-      message: ERROR_MESSAGES.UNEXPECTED,
+      success: true,
+      data: deletedCode,
+    };
+  } catch (error) {
+    console.error("招待コードの削除に失敗しました:", error);
+    return {
+      success: false,
+      error: {
+        type: "UNEXPECTED",
+        message: ERROR_MESSAGES.UNEXPECTED,
+      },
     };
   }
 }

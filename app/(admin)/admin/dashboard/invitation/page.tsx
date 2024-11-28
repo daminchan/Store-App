@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   description: "招待コードの管理を行います",
 };
 
+/**
+ * 招待コード管理ページ
+ * @description Server ComponentとしてMetadataを設定し、Client Componentをラップする
+ */
 export default function Page() {
   return <AdminInvitationPage />;
 }

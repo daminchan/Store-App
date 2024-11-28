@@ -1,61 +1,18 @@
 "use client";
 
 import { type FC } from "react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNotification } from "@/hooks/common";
-import { generateInvitationCode } from "../../_actions";
-import type { GenerateInvitationError } from "../../_actions";
+import { useInvitationForm } from "./hooks/useInvitationForm";
 
+/**
+ * 招待コード生成フォームコンポーネント
+ * @description 招待コードの生成と有効期限の設定を行うフォーム
+ */
 export const InvitationForm: FC = () => {
-  const [validDays, setValidDays] = useState(30);
-  const [isLoading, setIsLoading] = useState(false);
-  const { showNotification } = useNotification();
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    console.log("招待コード生成開始 - 有効期限:", validDays, "日");
-
-    try {
-      const result = await generateInvitationCode(validDays);
-      console.log("生成結果:", result);
-
-      if ("success" in result) {
-        const { code, expiresAt } = result.data;
-        console.log("生成成功:", {
-          code,
-          expiresAt,
-          validDays,
-        });
-
-        showNotification({
-          title: "成功",
-          description: `招待コード: ${code}を生成しました`,
-          type: "success",
-        });
-      } else {
-        const error = result as GenerateInvitationError;
-        console.error("生成エラー:", error);
-        showNotification({
-          title: "エラー",
-          description: error.message,
-          type: "error",
-        });
-      }
-    } catch (error) {
-      console.error("予期せぬエラー:", error);
-      showNotification({
-        title: "エラー",
-        description: "予期せぬエラーが発生しました",
-        type: "error",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { validDays, isLoading, handleSubmit, handleValidDaysChange } =
+    useInvitationForm();
 
   return (
     <div className="rounded-lg border">
@@ -63,24 +20,41 @@ export const InvitationForm: FC = () => {
         <h2 className="text-xl font-semibold">招待コード生成</h2>
       </div>
       <div className="border-t p-4">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          aria-label="招待コード生成フォーム"
+        >
           <div className="space-y-2">
-            <Label htmlFor="validDays">有効期限（日数）</Label>
+            <Label htmlFor="validDays" className="block">
+              有効期限（日数）
+            </Label>
             <Input
               id="validDays"
+              name="validDays"
               type="number"
               min={1}
               max={365}
               value={validDays}
-              onChange={(e) => setValidDays(Number(e.target.value))}
+              onChange={handleValidDaysChange}
               className="w-full"
               disabled={isLoading}
+              aria-describedby="validDays-description"
+              required
             />
-            <p className="text-sm text-muted-foreground">
+            <p
+              id="validDays-description"
+              className="text-sm text-muted-foreground"
+            >
               1日から365日の間で設定してください
             </p>
           </div>
-          <Button type="submit" disabled={isLoading} className="w-full">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full"
+            aria-busy={isLoading}
+          >
             {isLoading ? "生成中..." : "招待コードを生成"}
           </Button>
         </form>

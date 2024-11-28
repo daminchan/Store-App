@@ -42,6 +42,7 @@ export async function validateInvitation({
     // 認証チェック
     const { userId } = await auth();
     if (!userId) {
+      console.error("認証エラー: ユーザーIDが見つかりません");
       return {
         message: ERROR_MESSAGES.UNAUTHORIZED,
         errors: { code: ERROR_MESSAGES.UNAUTHORIZED },
@@ -97,7 +98,7 @@ export async function validateInvitation({
 
     return { success: true };
   } catch (error) {
-    console.error("Failed to validate invitation code:", error);
+    console.error("招待コードの検証に失敗しました:", error);
     return {
       message: ERROR_MESSAGES.UNEXPECTED,
       errors: { submit: ERROR_MESSAGES.UNEXPECTED },
